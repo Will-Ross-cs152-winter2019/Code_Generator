@@ -152,7 +152,7 @@ loc.step();
 {RETURN}		{numChar+= yyleng; return yy::parser::make_RETURN(loc);}
 
 {IDENT} 		{numChar += yyleng; yylval.op = yytext; return yy::parser::make_IDENT(loc);}
-{NUMBER} 		{numChar += yyleng; yylval.val = atoi(yytext); return yy::parser::make_NUMBER(loc);}
+{NUMBER} 		{numChar += yyleng; yylval.val = atoi(yytext); return yy::parser::make_NUMBER(atoi(yytext), loc);}
 {WH}+			{numChar += yyleng;}
 \n			{++numLines; numChar = 1;}
 {TAB}			{numChar += 3;}
