@@ -4,6 +4,7 @@
 #include "parser.tab.hh"
 
 static yy::location loc;
+int numLines - 1, numChar = 1;
 %}
 
 %option noyywrap 
