@@ -4,7 +4,6 @@
 #include "parser.tab.hh"
 
 static yy::location loc;
-int numLines - 1, numChar = 1;
 %}
 
 %option noyywrap 
@@ -124,36 +123,36 @@ loc.step();
 {R_SQUARE_BRACKET} 	{numChar+= yyleng; return R_SQUARE_BRACKET;}
 {ASSIGN} 		{numChar+= yyleng; return ASSIGN;}
 
-{function} 		{numChar+= yyleng; return FUNCTION;}
-{BEGIN_PARAMS}		{numChar+= yyleng; return BEGIN_PARAMS;}
-{END_PARAMS}		{numChar+= yyleng; return END_PARAMS;}
-{BEGIN_LOCALS}		{numChar+= yyleng; return BEGIN_LOCALS;}
-{END_LOCALS}		{numChar+= yyleng; return END_LOCALS;}
-{BEGIN_BODY}		{numChar+= yyleng; return BEGIN_BODY;}
-{END_BODY}		{numChar+= yyleng; return END_BODY;}
-{INTEGER}		{numChar+= yyleng; return INTEGER;}
-{ARRAY}			{numChar+= yyleng; return ARRAY;}
-{OF}			{numChar+= yyleng; return OF;}
-{IF}			{numChar+= yyleng; return IF;}
-{THEN}			{numChar+= yyleng; return THEN;}
-{ENDIF}			{numChar+= yyleng; return ENDIF;}
-{ELSE}			{numChar+= yyleng; return ELSE;}
-{WHILE}			{numChar+= yyleng; return WHILE;}
-{DO}			{numChar+= yyleng; return DO;}
-{BEGINLOOP}		{numChar+= yyleng; return BEGINLOOP;}
-{ENDLOOP}		{numChar+= yyleng; return ENDLOOP;}
-{CONTINUE}		{numChar+= yyleng; return CONTINUE;}
-{READ}			{numChar+= yyleng; return READ;}
-{WRITE}			{numChar+= yyleng; return WRITE;}
-{AND}			{numChar+= yyleng; return AND;}
-{OR}			{numChar+= yyleng; return OR;}
-{NOT}			{numChar+= yyleng; return NOT;}
-{TRUE}			{numChar+= yyleng; return TRUE; }
-{FALSE}			{numChar+= yyleng; return FALSE;}
-{RETURN}		{numChar+= yyleng; return RETURN;}
+{function} 		{loc.lines(1); loc.step(); return yy::parser::make_FUNCTION(loc);}
+{BEGIN_PARAMS}		{numChar+= yyleng; return yy::parser::make_BEGIN_PARAMS(loc);}
+{END_PARAMS}		{numChar+= yyleng; return yy::parser::make_END_PARAMS(loc);}
+{BEGIN_LOCALS}		{numChar+= yyleng; return yy::parser::make_BEGIN_LOCALS(loc);}
+{END_LOCALS}		{numChar+= yyleng; return yy::parser::make_END_LOCALS(loc);}
+{BEGIN_BODY}		{numChar+= yyleng; return yy::parser::make_BEGIN_BODY(loc);}
+{END_BODY}		{numChar+= yyleng; return yy::parser::make_END_BODY(loc);}
+{INTEGER}		{numChar+= yyleng; return yy::parser::make_INTEGER(loc);}
+{ARRAY}			{numChar+= yyleng; return yy::parser::make_ARRAY(loc);}
+{OF}			{numChar+= yyleng; return yy::parser::make_OF(loc);}
+{IF}			{numChar+= yyleng; return yy::parser::make_IF(loc);}
+{THEN}			{numChar+= yyleng; return yy::parser::make_THEN(loc);}
+{ENDIF}			{numChar+= yyleng; return yy::parser::make_ENDIF(loc);}
+{ELSE}			{numChar+= yyleng; return yy::parser::make_ELSE(loc);}
+{WHILE}			{numChar+= yyleng; return yy::parser::make_WHILE(loc);}
+{DO}			{numChar+= yyleng; return yy::parser::make_DO(loc);}
+{BEGINLOOP}		{numChar+= yyleng; return yy::parser::make_BEGINLOOP(loc);}
+{ENDLOOP}		{numChar+= yyleng; return yy::parser::make_ENDLOOP(loc);}
+{CONTINUE}		{numChar+= yyleng; return yy::parser::make_CONTINUE(loc);}
+{READ}			{numChar+= yyleng; return yy::parser::make_READ(loc);}
+{WRITE}			{numChar+= yyleng; return yy::parser::make_WRITE(loc);}
+{AND}			{numChar+= yyleng; return yy::parser::make_AND(loc);}
+{OR}			{numChar+= yyleng; return yy::parser::make_OR(loc);}
+{NOT}			{numChar+= yyleng; return yy::parser::make_NOT(loc);}
+{TRUE}			{numChar+= yyleng; return yy::parser::make_TRUE(loc); }
+{FALSE}			{numChar+= yyleng; return yy::parser::make_FALSE(loc);}
+{RETURN}		{numChar+= yyleng; return yy::parser::make_RETURN(loc);}
 
-{IDENT} 		{numChar += yyleng; yylval.op = yytext; return IDENT;}
-{NUMBER} 		{numChar += yyleng; yylval.val = atoi(yytext); return NUMBER;}
+{IDENT} 		{numChar += yyleng; yylval.op = yytext; return yy::parser::make_IDENT(loc);}
+{NUMBER} 		{numChar += yyleng; yylval.val = atoi(yytext); return yy::parser::make_NUMBER(loc);}
 {WH}+			{numChar += yyleng;}
 \n			{++numLines; numChar = 1;}
 {TAB}			{numChar += 3;}
