@@ -35,11 +35,14 @@
 #include <map>
 #include <regex>
 #include <set>
+enum token_type{variable, array, function}; 
 yy::parser::symbol_type yylex();
-
+void fillTable(std::set<std::string> &s);
+int isValid(std::string id);
+void addToUsed(std::string, enum token_type t);
     /* define your symbol table, global variables,
      * list of keywords or any function you may need here */
-    
+std::map<std::string, enum token_type> usedVars;   
     /* end of your code */
 }
 
@@ -52,12 +55,17 @@ yy::parser::symbol_type yylex();
 %token	INTEGER ARRAY OF IF THEN ENDIF ELSE WHILE DO BEGINLOOP ENDLOOP CONTINUE
 %token	READ WRITE TRUE FALSE RETURN SEMICOLON COLON COMMA
 %token <int> NUMBER
-%token <char*> IDENT
-%left	MULT DIV MOD ADD SUB 
+%token <std::string> IDENT
+
+%right  ASSIGN
+%left   OR
+%left	AND 
+%right  NOT
 %left	EQ NEQ LT GT LTE GTE
-%left	L_SQUARE_BRACKET R_SQUARE_BRACKET L_PAREN R_PAREN
-%left	AND OR
-%right	NOT ASSIGN
+%left   ADD SUB 
+%left	MULT DIV MOD
+%left	L_SQUARE_BRACKET R_SQUARE_BRACKET
+%left   L_PAREN R_PAREN
     /* end of token specifications */
 
 %%
@@ -115,10 +123,10 @@ statement_loop: /*empty */ {printf("statement_loop -> epsilon\n");}
                 | statement SEMICOLON statement_loop	{printf("statement_loop -> statement SEMICOLON statement_loop\n");}
 		; 
 bool_expr:      relation_and_expr 		{printf("bool_expr -> relation_and_expr\n");}
-		| OR relation_and_expr		{printf("bool_expr -> OR relation_and_expr\n");}
+		| bool_expr OR relation_and_expr    {printf("bool_expr -> OR relation_and_expr\n");}
 		;
 relation_and_expr:	relation_expr 		{printf("relation_and_expr -> relation_expr\n");}
-			| AND relation_expr	{printf("relation_and_expr -> AND relatio_expr\n");}
+			| relation_and_expr AND relation_expr	{printf("relation_and_expr -> AND relatio_expr\n");}
 			;
 relation_expr:  NOT relation_expr		{printf("relation_expr -> NOT relation_expr\n");}
                 | expression comp expression	{printf("relation_expr -> expression comp expression\n");}
@@ -169,6 +177,30 @@ int main(int argc, char *argv[])
     return p.parse();
 }
 
+//Takes in the set "keywords" and fills with all of the
+// string values pertaining to the reserved words
+void fillTable(std::set<std::string> &s){
+
+}
+
+//Takes in a string and compares it to see whether
+// or not it is contained within the set of keywords
+// or if it has been previously declared.
+// IF either of the above conditions are met, return -1
+// and goto semantic error.
+int isValid(std::string id){
+
+}
+
+//If an identifier is valid, add it to the map of
+//used variable names. Include the type of variable
+// i.e "varaiable" = 0, "array" = 1 and
+// "function" == 2
+void addToUsed(std::string id, enum token_type t){
+
+}
+
+ 
 void yy::parser::error(const yy::location& l, const std::string& m)
 {
     std::cerr << l << ": " << m << std::endl;

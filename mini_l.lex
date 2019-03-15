@@ -2,7 +2,7 @@
 #include <iostream>
 #define YY_DECL yy::parser::symbol_type yylex()
 #include "parser.tab.hh"
-
+#include <string>
 static yy::location loc;
 %}
 
@@ -101,65 +101,65 @@ loc.step();
 
     /* your rules here */
 
-{ADD} 			{numChar+= yyleng; return ADD;}
-{SUB} 			{numChar+= yyleng; return SUB;}
-{MULT} 			{numChar+= yyleng; return MULT;}
-{MOD} 			{numChar+= yyleng; return MOD;}
-{DIV} 			{numChar+= yyleng; return DIV;}
+{ADD} 			{return yy::parser::make_ADD(loc);}
+{SUB} 			{return  yy::parser::make_SUB(loc);}
+{MULT} 			{return yy::parser::make_MULT(loc);}
+{MOD} 			{return yy::parser::make_MOD(loc);}
+{DIV} 			{return yy::parser::make_DIV(loc);}
 
-{EQ} 			{numChar+= yyleng; return EQ;}
-{NEQ} 			{numChar+= yyleng; return NEQ;}
-{LT} 			{numChar+= yyleng; return LT;}
-{GT} 			{numChar+= yyleng; return GT;}
-{LTE} 			{numChar+= yyleng; return LTE;}
-{GTE} 			{numChar+= yyleng; return GTE;}
+{EQ} 			{return yy::parser::make_EQ(loc);}
+{NEQ} 			{return yy::parser::make_NEQ(loc);}
+{LT} 			{return yy::parser::make_LT(loc);}
+{GT} 			{return yy::parser::make_GT(loc);}
+{LTE} 			{return yy::parser::make_LTE(loc);}
+{GTE} 			{return yy::parser::make_GTE(loc);}
 
-{SEMICOLON} 		{numChar+= yyleng; return SEMICOLON;}
-{COLON} 		{numChar+= yyleng; return COLON;}
-{COMMA} 		{numChar+= yyleng; return COMMA;}
-{L_PAREN} 		{numChar+= yyleng; return L_PAREN;}
-{R_PAREN} 		{numChar+= yyleng; return R_PAREN;}
-{L_SQUARE_BRACKET} 	{numChar+= yyleng; return L_SQUARE_BRACKET;}
-{R_SQUARE_BRACKET} 	{numChar+= yyleng; return R_SQUARE_BRACKET;}
-{ASSIGN} 		{numChar+= yyleng; return ASSIGN;}
+{SEMICOLON} 		{return yy::parser::make_SEMICOLON(loc);}
+{COLON} 		{return yy::parser::make_COLON(loc);}
+{COMMA} 		{return yy::parser::make_COMMA(loc);}
+{L_PAREN} 		{return yy::parser::make_L_PAREN(loc);}
+{R_PAREN} 		{return yy::parser::make_R_PAREN(loc);}
+{L_SQUARE_BRACKET} 	{return yy::parser::make_L_SQUARE_BRACKET(loc);}
+{R_SQUARE_BRACKET} 	{return yy::parser::make_R_SQUARE_BRACKET(loc);}
+{ASSIGN} 		{return yy::parser::make_ASSIGN(loc);}
 
-{function} 		{loc.lines(1); loc.step(); return yy::parser::make_FUNCTION(loc);}
-{BEGIN_PARAMS}		{numChar+= yyleng; return yy::parser::make_BEGIN_PARAMS(loc);}
-{END_PARAMS}		{numChar+= yyleng; return yy::parser::make_END_PARAMS(loc);}
-{BEGIN_LOCALS}		{numChar+= yyleng; return yy::parser::make_BEGIN_LOCALS(loc);}
-{END_LOCALS}		{numChar+= yyleng; return yy::parser::make_END_LOCALS(loc);}
-{BEGIN_BODY}		{numChar+= yyleng; return yy::parser::make_BEGIN_BODY(loc);}
-{END_BODY}		{numChar+= yyleng; return yy::parser::make_END_BODY(loc);}
-{INTEGER}		{numChar+= yyleng; return yy::parser::make_INTEGER(loc);}
-{ARRAY}			{numChar+= yyleng; return yy::parser::make_ARRAY(loc);}
-{OF}			{numChar+= yyleng; return yy::parser::make_OF(loc);}
-{IF}			{numChar+= yyleng; return yy::parser::make_IF(loc);}
-{THEN}			{numChar+= yyleng; return yy::parser::make_THEN(loc);}
-{ENDIF}			{numChar+= yyleng; return yy::parser::make_ENDIF(loc);}
-{ELSE}			{numChar+= yyleng; return yy::parser::make_ELSE(loc);}
-{WHILE}			{numChar+= yyleng; return yy::parser::make_WHILE(loc);}
-{DO}			{numChar+= yyleng; return yy::parser::make_DO(loc);}
-{BEGINLOOP}		{numChar+= yyleng; return yy::parser::make_BEGINLOOP(loc);}
-{ENDLOOP}		{numChar+= yyleng; return yy::parser::make_ENDLOOP(loc);}
-{CONTINUE}		{numChar+= yyleng; return yy::parser::make_CONTINUE(loc);}
-{READ}			{numChar+= yyleng; return yy::parser::make_READ(loc);}
-{WRITE}			{numChar+= yyleng; return yy::parser::make_WRITE(loc);}
-{AND}			{numChar+= yyleng; return yy::parser::make_AND(loc);}
-{OR}			{numChar+= yyleng; return yy::parser::make_OR(loc);}
-{NOT}			{numChar+= yyleng; return yy::parser::make_NOT(loc);}
-{TRUE}			{numChar+= yyleng; return yy::parser::make_TRUE(loc); }
-{FALSE}			{numChar+= yyleng; return yy::parser::make_FALSE(loc);}
-{RETURN}		{numChar+= yyleng; return yy::parser::make_RETURN(loc);}
+{function} 		{return yy::parser::make_FUNCTION(loc);}
+{BEGIN_PARAMS}		{return yy::parser::make_BEGIN_PARAMS(loc);}
+{END_PARAMS}		{return yy::parser::make_END_PARAMS(loc);}
+{BEGIN_LOCALS}		{return yy::parser::make_BEGIN_LOCALS(loc);}
+{END_LOCALS}		{return yy::parser::make_END_LOCALS(loc);}
+{BEGIN_BODY}		{return yy::parser::make_BEGIN_BODY(loc);}
+{END_BODY}		{return yy::parser::make_END_BODY(loc);}
+{INTEGER}		{return yy::parser::make_INTEGER(loc);}
+{ARRAY}			{return yy::parser::make_ARRAY(loc);}
+{OF}			{return yy::parser::make_OF(loc);}
+{IF}			{return yy::parser::make_IF(loc);}
+{THEN}			{return yy::parser::make_THEN(loc);}
+{ENDIF}			{return yy::parser::make_ENDIF(loc);}
+{ELSE}			{return yy::parser::make_ELSE(loc);}
+{WHILE}			{return yy::parser::make_WHILE(loc);}
+{DO}			{return yy::parser::make_DO(loc);}
+{BEGINLOOP}		{return yy::parser::make_BEGINLOOP(loc);}
+{ENDLOOP}		{return yy::parser::make_ENDLOOP(loc);}
+{CONTINUE}		{return yy::parser::make_CONTINUE(loc);}
+{READ}			{return yy::parser::make_READ(loc);}
+{WRITE}			{return yy::parser::make_WRITE(loc);}
+{AND}			{return yy::parser::make_AND(loc);}
+{OR}			{return yy::parser::make_OR(loc);}
+{NOT}			{return yy::parser::make_NOT(loc);}
+{TRUE}			{return yy::parser::make_TRUE(loc); }
+{FALSE}			{return yy::parser::make_FALSE(loc);}
+{RETURN}		{return yy::parser::make_RETURN(loc);}
 
-{IDENT} 		{numChar += yyleng; yylval.op = yytext; return yy::parser::make_IDENT(loc);}
-{NUMBER} 		{numChar += yyleng; yylval.val = atoi(yytext); return yy::parser::make_NUMBER(atoi(yytext), loc);}
-{WH}+			{numChar += yyleng;}
-\n			{++numLines; numChar = 1;}
-{TAB}			{numChar += 3;}
+{IDENT} 		{return yy::parser::make_IDENT((std::string) yytext, loc);}
+{NUMBER} 		{return yy::parser::make_NUMBER(atoi(yytext), loc);}
+{WH}+			{loc.step();}
+\n			{loc.lines(yyleng); loc.step();}
+{TAB}+		        {loc.step();}
 "##".*
-{IDENT}_+ 			{printf("Error at line %d, column %d: identifier \"%s\" cannot end with an underscore\n", numLines, numChar, yytext);}
-(_|{NUMBER})+({IDENT})		{printf("Error at line %d, column %d: identifier \"%s\" must begin with a letter\n", numLines, numChar, yytext);}
-.				{printf("Error at line %d, column %d: unrecognized symbol \"%s\"\n", numLines, numChar, yytext);}
+{IDENT}_+ 			{std::cout << "Error. Invalid identifier \"" << yytext << "\" at: " << loc << std::endl;}
+(_|{NUMBER})+({IDENT})	        {std::cout << "Error. Invalid identifier \"" << yytext << "\" at: " << loc << std::endl;}
+.				{std::cout << "Error. Unrecognized symbol \"" << yytext << "\" at: " << loc << std::endl;}
 
     /* use this structure to pass the Token :
      * return yy::parser::make_TokenName(loc)
