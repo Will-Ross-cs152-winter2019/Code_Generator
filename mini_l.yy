@@ -235,7 +235,7 @@ int isValid(std::string id){
 // "function" == 2
 void addToUsed(std::string id, enum token_type t){
     if(isValid(id)){
-        
+        usedVars.insert(std::pair<std::string, enum token_type>(id, t));
     }
 }
 
