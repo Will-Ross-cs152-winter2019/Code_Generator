@@ -151,7 +151,7 @@ loc.step();
 {FALSE}			{return yy::parser::make_FALSE(loc);}
 {RETURN}		{return yy::parser::make_RETURN(loc);}
 
-{IDENT} 		{return yy::parser::make_IDENT((std::string) yytext, loc);}
+{IDENT} 		{return yy::parser::make_IDENT(yytext, loc);}
 {NUMBER} 		{return yy::parser::make_NUMBER(atoi(yytext), loc);}
 {WH}+			{loc.step();}
 \n			{loc.lines(yyleng); loc.step();}
@@ -168,7 +168,6 @@ loc.step();
      * the rule to return token function.
      */
 
-function       {return yy::parser::make_FUNCTION(loc);}
 
  <<EOF>>    {return yy::parser::make_END(loc);}
     /* your rules end */
