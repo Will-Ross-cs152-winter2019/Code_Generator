@@ -42,7 +42,8 @@ int isValid(std::string id);
 void addToUsed(std::string, enum token_type t);
     /* define your symbol table, global variables,
      * list of keywords or any function you may need here */
-std::map<std::string, enum token_type> usedVars;   
+std::map<std::string, enum token_type> usedVars;
+std::set<std::string> keywordTable;   
     /* end of your code */
 }
 
@@ -174,13 +175,40 @@ id:             IDENT 					{printf("IDENT -> %s\n", $1);};
 int main(int argc, char *argv[])
 {
     yy::parser p;
+    fillTable(keywordTable);
     return p.parse();
 }
 
 //Takes in the set "keywords" and fills with all of the
 // string values pertaining to the reserved words
 void fillTable(std::set<std::string> &s){
-
+    s.insert("function");
+    s.insert("beginparams");
+    s.insert("endparams");
+    s.insert("beginlocals");
+    s.insert("endlocals");
+    s.insert("beginbody");
+    s.insert("endbody");
+    s.insert("integer");
+    s.insert("array");
+    s.insert("of");
+    s.insert("if");
+    s.insert("then");
+    s.insert("endif");
+    s.insert("else");
+    s.insert("while");
+    s.insert("do");
+    s.insert("beginloop");
+    s.insert("endloop");
+    s.insert("continue");
+    s.insert("read");
+    s.insert("write");
+    s.insert("and");
+    s.insert("or");
+    s.insert("not");
+    s.insert("true");
+    s.insert("false");
+    s.insert("return");
 }
 
 //Takes in a string and compares it to see whether
@@ -189,7 +217,16 @@ void fillTable(std::set<std::string> &s){
 // IF either of the above conditions are met, return -1
 // and goto semantic error.
 int isValid(std::string id){
-
+    int result = 0;
+    std::map<std::string, enum token_type>::iterator itr1;
+    std::set<std::string>::iterator itr2;
+    itr1 = usedVars.find(id);
+    itr2 = keywordTable.find(id);
+        if(itr1 != usedVars.end() && itr2 != keywordTable.end()){
+            result = 1;
+        }
+    
+    return result;
 }
 
 //If an identifier is valid, add it to the map of
@@ -197,7 +234,9 @@ int isValid(std::string id){
 // i.e "varaiable" = 0, "array" = 1 and
 // "function" == 2
 void addToUsed(std::string id, enum token_type t){
-
+    if(isValid(id)){
+        
+    }
 }
 
  
