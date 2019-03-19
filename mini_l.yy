@@ -188,52 +188,52 @@ write_state:    WRITE var_loop		{printf("write_state -> WRITE var_loop\n");}
 var_loop:       var 			{printf("var_loop -> var\n");}
 		| var COMMA var_loop	{printf("var_loop -> var COMMA var_loop\n");}
 		| error;
-else_loop:      /* empty */					{printf("else_loop -> epsilon\n");}  
-                | ELSE statement_loop				{printf("else_loop -> ELSE statement SEMICOLON statement_loop\n");}
+else_loop:      /* empty */					{}  
+                | ELSE statement_loop				{}
 		;
 statement_loop: /*empty */ {$$.s += "";}		 
                 | statement SEMICOLON statement_loop	{$$.s +=  ($1.s + "\n" + $3.s);}
 		; 
-bool_expr:      relation_and_expr 		{printf("bool_expr -> relation_and_expr\n");}
-		| bool_expr OR relation_and_expr    {printf("bool_expr -> OR relation_and_expr\n");}
+bool_expr:      relation_and_expr 		{}
+		| bool_expr OR relation_and_expr    {}
 		;
-relation_and_expr:	relation_expr 		{printf("relation_and_expr -> relation_expr\n");}
-			| relation_and_expr AND relation_expr	{printf("relation_and_expr -> AND relatio_expr\n");}
+relation_and_expr:	relation_expr 		{}
+			| relation_and_expr AND relation_expr	{}
 			;
-relation_expr:  NOT relation_expr		{printf("relation_expr -> NOT relation_expr\n");}
-                | expression comp expression	{printf("relation_expr -> expression comp expression\n");}
-                | TRUE				{printf("relation_expr -> TRUE\n");}
-                | FALSE				{printf("relation_expr -> FALSE\n");}
-                | L_PAREN bool_expr R_PAREN	{printf("relation_expr -> L_PAREN bool_expr R_PAREN\n");}
+relation_expr:  NOT relation_expr		{}
+                | expression comp expression	{}
+                | TRUE				{}
+                | FALSE				{}
+                | L_PAREN bool_expr R_PAREN	{}
 		;
-comp:	        EQ 		{printf("comp -> EQ\n");}
-		| NEQ 		{printf("comp -> NEQ\n");}
-		| LT 		{printf("comp -> LT\n");}
-		| GT 		{printf("comp -> GT\n");}
-		| LTE 		{printf("comp -> LTE\n");}
-		| GTE 		{printf("comp -> GTE\n");}
+comp:	        EQ 		{}
+		| NEQ 		{}
+		| LT 		{}
+		| GT 		{}
+		| LTE 		{}
+		| GTE 		{}
 		| error;	
-para:        	expression		        {printf("para -> expression");}
-                | expression COMMA para         {printf("para -expression COMMA para");};
+para:        	expression		        {}
+                | expression COMMA para         {};
 		
-ident_term:     id L_PAREN para R_PAREN 	{printf("ident_term -> id L_PAREN para R_PAREN\n");}
+ident_term:     id L_PAREN para R_PAREN 	{}
 		;  
 ident_var:      var 				{$$.s += $1.s;}
-		| NUMBER 			{printf("ident_var -> NUMBER%d\n", $1);}
-		| L_PAREN expression R_PAREN	{printf("ident_var -> R_PAREN expression L_PAREN\n");}
+		| NUMBER 			{}
+		| L_PAREN expression R_PAREN	{}
 		;
 term:           ident_var 			{$$.s += $1.s;}
-                | SUB ident_var			{printf("term -> SUB ident_var\n");}
-		| ident_term			{printf("term -> ident_term\n");}
+                | SUB ident_var			{}
+		| ident_term			{}
 		;		
 multi_express:  term 						{$$.s += $1.s;}
-		| multi_express MULT term			{printf("multi_express -> multi_express MULT term\n");}
-		| multi_express DIV term 			{printf("multi_express -> multi_express DIV term\n");}
-		| multi_express MOD term			{printf("multi_express -> multi_express MOD term\n");}
+		| multi_express MULT term			{}
+		| multi_express DIV term 			{}
+		| multi_express MOD term			{}
 		;
 expression:     multi_express 				{$$.s += $1.s;}
-		| expression ADD multi_express		{printf("expression -> expression ADD multi_express\n");}
-		| expression SUB multi_express		{printf("expression -> expression SUB multi_express\n");}
+		| expression ADD multi_express		{}
+		| expression SUB multi_express		{}
 		;
 var:            id 	    							{$$.s += $1.s;}
 		| id L_SQUARE_BRACKET expression R_SQUARE_BRACKET		{$$.s += ($1.s +"[" + $3.s + "]");}
