@@ -115,16 +115,16 @@ std::string output = "";
 %type <int> NUMBER
 %type <std::string> IDENT
 %type <id_struct> id
-%type <idLoop_struct>
+%type <idLoop_struct> ident_loop
 %type <dec_struct> declaration
 %type <decLoop_struct> dec_loop
 %type <expr_struct> expression
 %type <state_struct> statement
 %type <stateLoop_struct> statement_loop
 %type <var_struct> var
-%type <multiExpr_struct> var
-%type <term_struct> var
-%type <identVar_struct> var
+%type <multiExpr_struct> multi_express
+%type <term_struct> term
+%type <identVar_struct> ident_var
 /*END TYPES*/
 
 %right  ASSIGN
@@ -150,7 +150,7 @@ program:        /* empty */  {printf("program -> epsilon\n");}
                 | funct {printf("program -> function\n");}
                 ;
 funct:       FUNCTION id SEMICOLON BEGIN_PARAMS param_loop END_PARAMS BEGIN_LOCALS dec_loop END_LOCALS BEGIN_BODY statement_loop END_BODY program
-		{cout << "funct " << $2.s << "\n" << $8.s << "end funct";}
+		{std::cout << "funct " << $2.s << "\n" << $8.s << "end funct";}
                 ;
 param_loop:     /* empty */ {printf("param_loop -> epsilon\n");}
                 | declaration SEMICOLON param_loop {printf("param_loop -> declaration SEMICOLON param_loop\n");}
@@ -166,7 +166,7 @@ ident_loop:     id 				{$$.s += ("." + $1.s);}
 		| id COMMA ident_loop	{$$.s += ("." + $1.s + "\n" + $3.s);}
 		; 
 
-statement:      var ASSIGN expression	{;}
+statement:      var ASSIGN expression	{$$.s += "= " + $1.s + ", " + $3.s;}
                 | if_state		{printf("statement -> if_state\n");}
                 | while_state		{printf("statement -> while_state\n");}
                 | dowhile_state		{printf("statement -> dowhile_state\n");}
@@ -191,7 +191,7 @@ var_loop:       var 			{printf("var_loop -> var\n");}
 else_loop:      /* empty */					{printf("else_loop -> epsilon\n");}  
                 | ELSE statement_loop				{printf("else_loop -> ELSE statement SEMICOLON statement_loop\n");}
 		;
-statement_loop: /*empty */ {printf("statement_loop -> epsilon\n");}		 
+statement_loop: /*empty */ {$$.s += "";}		 
                 | statement SEMICOLON statement_loop	{$$.s +=  ($1.s + "\n" + $3.s);}
 		; 
 bool_expr:      relation_and_expr 		{printf("bool_expr -> relation_and_expr\n");}
