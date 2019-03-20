@@ -152,6 +152,7 @@ int isValid(std::string id);
 std::string makeTemp();
 std::string makeLabel();
 void addToUsed(std::string, enum token_type t);
+std::string readComp(enum comp_type t);
 
 /* VECTORS */
 std::vector<std::string> writes;
@@ -227,13 +228,16 @@ std::string output = "";
 program:        /* empty */  {}
                 | funct {}
                 ;
-funct:       FUNCTION id SEMICOLON BEGIN_PARAMS param_loop END_PARAMS BEGIN_LOCALS dec_loop END_LOCALS BEGIN_BODY statement_loop END_BODY program
+
+funct:       	FUNCTION id SEMICOLON BEGIN_PARAMS param_loop END_PARAMS BEGIN_LOCALS dec_loop END_LOCALS BEGIN_BODY statement_loop END_BODY program
 		{std::cout << "func" << $2.s << "\n" << declareTemps() << $8.s << $11.s << "endfunc\n";}
                 ;
-param_loop:     /* empty */ {}
-                | declaration SEMICOLON param_loop {}
+
+param_loop:     /* empty */ 				{$$.s = "";}
+                | declaration SEMICOLON param_loop 	{$$.s += ("param" + $1.s + "\n" + $3.s);} //IDK IF IT WORKS
                 | error;
-dec_loop:       /* empty */  				{$$.s = "";}
+
+dec_loop:       /* empty */  	{$$.s = "";}
                 | declaration SEMICOLON dec_loop	{$$.s += $1.s +"\n" + $3.s;}
 		;	
 
@@ -241,6 +245,7 @@ declaration:    ident_loop COLON INTEGER	{$$.s += $1.s;}
                 | id COLON ARRAY L_SQUARE_BRACKET NUMBER R_SQUARE_BRACKET OF INTEGER	
                     {$$.s += ".[]" + $1.s + ", " + std::to_string($5);}
 		;
+
 ident_loop:     id 				{$$.s += ("." + $1.s);}
 		| id COMMA ident_loop	{$$.s += ("." + $1.s + "\n" + $3.s); }
 		; 
@@ -254,73 +259,95 @@ statement:      var ASSIGN expression	{$$.s += $3.s + "=" + $1.s + "," + $3.tmp_
                 | CONTINUE 		{}
 		| RETURN expression	{}
 		;
+
 if_state:       IF bool_expr THEN statement_loop else_loop ENDIF		{}
 		; 
+
 while_state:    WHILE bool_expr BEGINLOOP statement_loop ENDLOOP		{}
 		;
+
 dowhile_state:	DO BEGINLOOP statement_loop ENDLOOP WHILE bool_expr 		{}
 		;
+
 read_state:     READ varRead_loop		{$$.s += readLoop();}
 		;
+
 write_state:    WRITE varWrite_loop		{$$.s += writeLoop();}
 		;
+
 varWrite_loop:  var 			{writes.push_back($1.s);}
 		| var COMMA varWrite_loop	{writes.push_back($1.s);} 
 		;
+
 varRead_loop:   var 			{reads.push_back($1.s);}
 		| var COMMA varRead_loop	{reads.push_back($1.s);} 
 		;
-else_loop:      /* empty */					{}  
+
+else_loop:      /* empty */					{$$.s += "";}  
                 | ELSE statement_loop				{}
 		;
+
 statement_loop: /*empty */ {$$.s += "";}		 
                 | statement SEMICOLON statement_loop	{$$.s +=  ($1.s + "\n" + $3.s);}
 		; 
+
 bool_expr:      relation_and_expr 		{$$.s += $1.s; $$.tmp_num = $1.tmp_num;}
 		| bool_expr OR relation_and_expr    {$$.s += $1.s + $3.s + "||" + makeTemp() + "," + $1.tmp_num + "," + $3.tmp_num + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
 		;
+
 relation_and_expr:	relation_expr 		{$$.s += $1.s; $$.tmp_num = $1.tmp_num;}
 			| relation_and_expr AND relation_expr	{$$.s += $1.s + $3.s + "&&" + makeTemp() + "," + $1.tmp_num + "," + $3.tmp_num + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
 			;
+
 relation_expr:  NOT relation_expr		{$$.s += $2.s + "!" + makeTemp() + "," + $2.tmp_num + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
                 | expression comp expression	{$$.s += $1.s + $3.s + readComp($2.t) + makeTemp() + "," + $1.tmp_num + "," + $3.tmp_num + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
                 | TRUE				{$$.s += "=" + makeTemp() + "," + std::to_string(1) + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
                 | FALSE				{$$.s += "=" + makeTemp() + "," + std::to_string(0) + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
                 | L_PAREN bool_expr R_PAREN	{$$.s += "=" + makeTemp() + "," + $2.tmp_num + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
 		;
+
 comp:	        EQ 		{$$.t = comp_type::eq;}
 		| NEQ 		{$$.t = comp_type::neq;}
 		| LT 		{$$.t = comp_type::lt;}
 		| GT 		{$$.t = comp_type::gt;}
 		| LTE 		{$$.t = comp_type::lte;}
 		| GTE 		{$$.t = comp_type::gte;}
-		;	
-para:        	expression		        {}
-                | expression COMMA para         {};
+		;
+	
+para:        	expression		        {$$.s += "param" + $1.s;} //IDK IF IT WORKS
+                | expression COMMA para         {} 
+		;
 		
-ident_term:     id L_PAREN para R_PAREN 	{}
-		;  
+ident_term:     id L_PAREN para R_PAREN 	{$$.s += $1.s + "(" + $3.s + ")";} //IDK IF IT WORKS
+		;
+  
 ident_var:      var 				{$$.s += "=" + makeTemp() + "," + $1.s + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
 		| NUMBER 			{$$.s += "=" + makeTemp() + ", " + std::to_string($1) + "\n"; $$.val = $1; $$.tmp_num = temps.at(tempCnt-1);}
 		| L_PAREN expression R_PAREN	{$$.s += $2.s + "=" +  makeTemp() + "," + $2.tmp_num + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
 		;
+
 term:           ident_var 			{$$.s += $1.s; $$.tmp_num = $1.tmp_num;}
                 | SUB ident_var			{$$.s += $2.s + "*" + makeTemp() + ", " + std::to_string(-1) + "," + $2.tmp_num + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
 		| ident_term			{}
-		;		
+		;	
+	
 multi_express:  term 						{$$.s += $1.s; $$.tmp_num = $1.tmp_num;}
 		| multi_express MULT term			{$$.s += $1.s + $3.s + "*" + makeTemp() + "," + $1.tmp_num + "," + $3.tmp_num + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
 		| multi_express DIV term 			{$$.s += $1.s + $3.s + "/" + makeTemp() + "," + $1.tmp_num + "," + $3.tmp_num + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
 		| multi_express MOD term			{$$.s += $1.s + $3.s + "%" + makeTemp() + "," + $1.tmp_num + "," + $3.tmp_num + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
 		;
+
 expression:     multi_express 				{$$.s += $1.s + "=" + makeTemp() + "," + $1.tmp_num + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
 		| expression ADD multi_express		{$$.s += $1.s + $3.s + "+" + makeTemp() + "," + $1.tmp_num + "," + $3.tmp_num + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
 		| expression SUB multi_express		{$$.s += $1.s + $3.s + "-" + makeTemp() + "," + $1.tmp_num + "," + $3.tmp_num + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
 		;
+
 var:            id 	    							{$$.s += $1.s;}
 		| id L_SQUARE_BRACKET expression R_SQUARE_BRACKET		{$$.s += ($1.s +"[" + $3.s + "]");}
 		;
-id:             IDENT 					{$$.s += " " + $1; };
+
+id:             IDENT 					{$$.s += " " + $1; }
+		;
 
 
 %%
