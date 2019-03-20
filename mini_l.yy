@@ -22,7 +22,7 @@
     /* define the sturctures using as types for non-terminals */
 
 enum token_type{variable, array, function}; 
-enum expr_type{assign, add, sub, mult, divide, mod};
+enum expr_type{reg, arr};
 enum comp_type{eq, neq, lte, gte, lt, gt, no}; 
 /* STRUCTS BEGIN HERE!!!!! */
 struct label_struct{
@@ -66,34 +66,46 @@ struct stateLoop_struct{
 struct var_struct{
     std::string s = "";
     int val;
+    enum expr_type t = expr_type::reg;
+    std::vector<std::string> arr;
+    std::string tmp_num;
 };
 
 struct expr_struct{
     std::string s = "";
     std::string tmp_num;
-    enum expr_type t = expr_type::assign;
+    enum expr_type t = expr_type::reg;
+    int LHS = 0;
+    std::vector<std::string> arr;
 };
 struct multiExpr_struct{
     std::string s = "";
     std::string tmp_num;
-    enum expr_type t = expr_type::assign;
+    enum expr_type t = expr_type::reg;
+    int LHS;
+    std::vector<std::string> arr;
 };
 struct term_struct{
     std::string s = "";
     std::string tmp_num;
+    enum expr_type t = expr_type::reg;
     int val;
+    std::vector<std::string> arr;
 };
 struct identVar_struct{
     std::string s = "";
     std::string tmp_num;
-    int val;
+    enum expr_type t = expr_type::reg;
+    std::string name;
 };
 struct varWriteLoop_struct{
     std::string s = "";
+    enum expr_type t = expr_type::reg;
     int val;
 };
 struct varReadLoop_struct{
     std::string s = "";
+    enum expr_type t = expr_type::reg;
     int val;
 };
 struct writeState_struct{
@@ -122,6 +134,19 @@ struct bool_struct{
     std::string s = "";
     std::string tmp_num;
     std::string lbl_num;
+};
+struct param_struct{
+    std::string s = "";
+};
+struct paramLoop_struct{
+    std::string s = "";
+};
+struct identTerm_struct{
+    std::string s = "";
+    std::string tmp_num;
+};
+struct elseLoop_struct{
+    std::string s = "";
 };
  
     /* end the structures for non-terminal types */
@@ -159,6 +184,7 @@ std::vector<std::string> writes;
 std::vector<std::string> reads;
 std::vector<std::string> temps;
 std::vector<std::string> labels;
+
 
     /* define your symbol table, global variables,
      * list of keywords or any function you may need here */
@@ -204,6 +230,10 @@ std::string output = "";
 %type <rel_struct> relation_expr
 %type <relAnd_struct> relation_and_expr
 %type <bool_struct> bool_expr
+%type <paramLoop_struct> param_loop
+%type <param_struct> para
+%type <identTerm_struct> ident_term
+%type <elseLoop_struct> else_loop
 /*END TYPES*/
 
 %right  ASSIGN
@@ -235,7 +265,7 @@ funct:       	FUNCTION id SEMICOLON BEGIN_PARAMS param_loop END_PARAMS BEGIN_LOC
 
 param_loop:     /* empty */ 				{$$.s = "";}
                 | declaration SEMICOLON param_loop 	{$$.s += ("param" + $1.s + "\n" + $3.s);} //IDK IF IT WORKS
-                | error;
+                ;
 
 dec_loop:       /* empty */  	{$$.s = "";}
                 | declaration SEMICOLON dec_loop	{$$.s += $1.s +"\n" + $3.s;}
@@ -250,7 +280,16 @@ ident_loop:     id 				{$$.s += ("." + $1.s);}
 		| id COMMA ident_loop	{$$.s += ("." + $1.s + "\n" + $3.s); }
 		; 
 
-statement:      var ASSIGN expression	{$$.s += $3.s + "=" + $1.s + "," + $3.tmp_num;}
+statement:      var ASSIGN expression	{
+                    if($1.t == expr_type::arr){
+                        $$.s += $1.s + $3.s;
+                        $$.s += "[]=" + $1.arr.at(0) + "," + $1.arr.at(1) + "," + $3.tmp_num;
+                    }
+                    else{
+                        $$.s += $3.s; 
+                        $$.s += "=" + $1.s + "," + $3.tmp_num;
+                    }
+                }
                 | if_state		{}
                 | while_state		{}
                 | dowhile_state		{}
@@ -303,7 +342,7 @@ relation_expr:  NOT relation_expr		{$$.s += $2.s + "!" + makeTemp() + "," + $2.t
                 | expression comp expression	{$$.s += $1.s + $3.s + readComp($2.t) + makeTemp() + "," + $1.tmp_num + "," + $3.tmp_num + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
                 | TRUE				{$$.s += "=" + makeTemp() + "," + std::to_string(1) + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
                 | FALSE				{$$.s += "=" + makeTemp() + "," + std::to_string(0) + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
-                | L_PAREN bool_expr R_PAREN	{$$.s += "=" + makeTemp() + "," + $2.tmp_num + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
+                | L_PAREN bool_expr R_PAREN	{$$.s += $2.s; $$.tmp_num = $2.tmp_num;}
 		;
 
 comp:	        EQ 		{$$.t = comp_type::eq;}
@@ -314,21 +353,32 @@ comp:	        EQ 		{$$.t = comp_type::eq;}
 		| GTE 		{$$.t = comp_type::gte;}
 		;
 	
-para:        	expression		        {$$.s += "param" + $1.s;} //IDK IF IT WORKS
-                | expression COMMA para         {} 
+para:        	expression		        {$$.s += $1.s + "param" + $1.tmp_num + "\n";}
+                | expression COMMA para         {$$.s += $1.s + "param" + $1.tmp_num + "\n" + $3.s; } 
 		;
 		
-ident_term:     id L_PAREN para R_PAREN 	{$$.s += $1.s + "(" + $3.s + ")";} //IDK IF IT WORKS
+ident_term:     id L_PAREN para R_PAREN 	{$$.s += $3.s + "call" + $1.s + "," + makeTemp() + "\n"; $$.tmp_num = temps.at(tempCnt -1);}
 		;
   
-ident_var:      var 				{$$.s += "=" + makeTemp() + "," + $1.s + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
-		| NUMBER 			{$$.s += "=" + makeTemp() + ", " + std::to_string($1) + "\n"; $$.val = $1; $$.tmp_num = temps.at(tempCnt-1);}
+ident_var:      var 	{
+                    if($1.t == expr_type::arr){
+                        $$.s += $1.s + "=[]" + makeTemp() + "," + $1.arr.at(0) + "," + $1.arr.at(1) + "\n";
+                        $$.tmp_num = temps.at(tempCnt-1);
+                    }
+                    else{
+                        $$.s += "=" + makeTemp() + "," + $1.s + "\n"; $$.tmp_num = temps.at(tempCnt-1);
+                    }
+                }
+		| NUMBER 			{$$.s += "=" + makeTemp() + ", " + std::to_string($1) + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
 		| L_PAREN expression R_PAREN	{$$.s += $2.s + "=" +  makeTemp() + "," + $2.tmp_num + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
 		;
 
-term:           ident_var 			{$$.s += $1.s; $$.tmp_num = $1.tmp_num;}
+term:           ident_var 			{
+                    $$.s += $1.s; 
+                    $$.tmp_num = $1.tmp_num;
+                }
                 | SUB ident_var			{$$.s += $2.s + "*" + makeTemp() + ", " + std::to_string(-1) + "," + $2.tmp_num + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
-		| ident_term			{}
+		| ident_term			{$$.s += $1.s; $$.tmp_num = $1.tmp_num;}
 		;	
 	
 multi_express:  term 						{$$.s += $1.s; $$.tmp_num = $1.tmp_num;}
@@ -337,13 +387,22 @@ multi_express:  term 						{$$.s += $1.s; $$.tmp_num = $1.tmp_num;}
 		| multi_express MOD term			{$$.s += $1.s + $3.s + "%" + makeTemp() + "," + $1.tmp_num + "," + $3.tmp_num + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
 		;
 
-expression:     multi_express 				{$$.s += $1.s + "=" + makeTemp() + "," + $1.tmp_num + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
-		| expression ADD multi_express		{$$.s += $1.s + $3.s + "+" + makeTemp() + "," + $1.tmp_num + "," + $3.tmp_num + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
-		| expression SUB multi_express		{$$.s += $1.s + $3.s + "-" + makeTemp() + "," + $1.tmp_num + "," + $3.tmp_num + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
+expression:     multi_express 	    {
+                    $$.s += $1.s;  $$.tmp_num = $1.tmp_num;
+                }
+		| expression ADD multi_express		{
+                    $$.s += $1.s + $3.s + "+" + makeTemp() + "," + $1.tmp_num + "," + $3.tmp_num + "\n"; $$.tmp_num = temps.at(tempCnt-1);
+                
+                }
+		| expression SUB multi_express	    {
+                    $$.s += $1.s + $3.s + "-" + makeTemp() + "," + $1.tmp_num + "," + $3.tmp_num + "\n"; $$.tmp_num = temps.at(tempCnt-1);
+                 
+                }
 		;
 
 var:            id 	    							{$$.s += $1.s;}
-		| id L_SQUARE_BRACKET expression R_SQUARE_BRACKET		{$$.s += ($1.s +"[" + $3.s + "]");}
+		| id L_SQUARE_BRACKET expression R_SQUARE_BRACKET		{$$.s += $3.s; $$.arr.push_back($1.s); $$.arr.push_back($3.tmp_num); 
+                    $$.t = expr_type::arr;}
 		;
 
 id:             IDENT 					{$$.s += " " + $1; }
@@ -458,34 +517,6 @@ std::string readLoop(){
 }
 
 
-std::string printExpr(enum expr_type t){
-    std::string str = "";
-    switch(t){
-        case assign:
-            str += "=";
-            break;
-        case add:
-            str += "+";
-            break;
-        case sub:
-            str += "-";
-            break;
-        case mult:
-            str += "*";
-            break;
-        case divide:
-            str += "/";
-            break;
-        case mod:
-            str += "%";
-            break;
-        default:
-            break;
-    }
-    
-    return str;
-
-}
 
 std::string declareTemps(){
     std::string str = "";
