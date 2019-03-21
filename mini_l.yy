@@ -181,10 +181,11 @@ struct doWhile_struct{
 /* FORWARD DECLARATIONS */
 yy::parser::symbol_type yylex();
 void fillTable(std::set<std::string> &s);
-std::string writeLoop();
-std::string readLoop();
+std::string writeVar(std::string s, enum expr_type t);
+std::string readVar(std::string s, enum expr_type t);
 std::string printExpr(enum expr_type t);
 std::string declareTemps();
+std::string assignParams();
 std::string declareLabels();
 int isValid(std::string id);
 std::string makeTemp();
@@ -197,7 +198,7 @@ std::vector<std::string> writes;
 std::vector<std::string> reads;
 std::vector<std::string> temps;
 std::vector<std::string> labels;
-
+std::vector<std::string> parameters;
 
     /* define your symbol table, global variables,
      * list of keywords or any function you may need here */
@@ -277,15 +278,15 @@ program:        /* empty */  {}
                 ;
 
 funct:       	FUNCTION id SEMICOLON BEGIN_PARAMS param_loop END_PARAMS BEGIN_LOCALS dec_loop END_LOCALS BEGIN_BODY statement_loop END_BODY program
-		{std::cout << "func" << $2.s << "\n" << declareTemps() << $8.s << $11.s << "endfunc\n";}
+		{std::cout << "func" << $2.s << "\n" << declareTemps() << $5.s << assignParams() << $8.s << $11.s << "endfunc\n";}
                 ;
 
 param_loop:     /* empty */ 				{$$.s = "";}
-                | declaration SEMICOLON param_loop 	{$$.s += ("param" + $1.s + "\n" + $3.s);} //IDK IF IT WORKS
+                | declaration SEMICOLON param_loop 	{$$.s += $1.s + $3.s; parameters.push_back($1.s);}
                 ;
 
 dec_loop:       /* empty */  	{$$.s = "";}
-                | declaration SEMICOLON dec_loop	{$$.s += $1.s +"\n" + $3.s;}
+                | declaration SEMICOLON dec_loop	{$$.s += $1.s + "\n" + $3.s;}
 		;	
 
 declaration:    ident_loop COLON INTEGER	{$$.s += $1.s;}
@@ -317,7 +318,7 @@ statement:      var ASSIGN expression	{
                         $$.s += ":=" + conts.top() + "\n";
                     }                    
                 }
-		| RETURN expression	{}
+		| RETURN expression	{$$.s += "ret" + $2.tmp_num;}
 		;
 
 if_state:       IF bool_expr THEN statement_loop else_loop ENDIF		
@@ -367,18 +368,46 @@ dowhile_state:	DO BEGINLOOP statement_loop ENDLOOP WHILE bool_expr
                 }       
 		;
 
-read_state:     READ varRead_loop		{$$.s += readLoop();}
+read_state:     READ varRead_loop		{$$.s += $2.s;}
 		;
 
-write_state:    WRITE varWrite_loop		{$$.s += writeLoop();}
+write_state:    WRITE varWrite_loop		{$$.s += $2.s;}
 		;
 
-varWrite_loop:  var 			{writes.push_back($1.s);}
-		| var COMMA varWrite_loop	{writes.push_back($1.s);} 
+varWrite_loop:  var 			{
+                    if($1.t == expr_type::arr){
+                        $$.s += writeVar($1.arr.at(0), $1.t) + "," + $1.arr.at(1);// + "\n";
+                    }
+                    else{
+                        $$.s += writeVar($1.s, $1.t);// + "\n";
+                    }
+                }
+		| var COMMA varWrite_loop	{ 
+                    if($1.t == expr_type::arr){
+                        $$.s += writeVar($1.arr.at(0), $1.t) + "," + $1.arr.at(1)/* + "\n"*/ + $3.s;
+                    }
+                    else{
+                        $$.s += writeVar($1.s, $1.t)/* + "\n"*/ + $3.s;
+                    }
+                }
 		;
 
-varRead_loop:   var 			{reads.push_back($1.s);}
-		| var COMMA varRead_loop	{reads.push_back($1.s);} 
+varRead_loop:   var 	    {
+                    if($1.t == expr_type::arr){
+                        $$.s += readVar($1.arr.at(0), $1.t) + "," + $1.arr.at(1);// + "\n";
+                    }
+                    else{
+                        $$.s += readVar($1.s, $1.t);// + "\n";
+                    }
+                }
+		| var COMMA varRead_loop	{
+                    if($1.t == expr_type::arr){
+                    $$.s += readVar($1.arr.at(0), $1.t) + "," + $1.arr.at(1)/* + "\n"*/ + $3.s;
+                    }
+                    else{  
+                        $$.s += readVar($1.s, $1.t)/* + "\n"*/ + $3.s;
+                    }
+                }
 		;
 
 else_loop:      /* empty */					{$$.s += "";}  
@@ -563,25 +592,38 @@ std::string makeTemp(){
     return s;
 }
 
-std::string writeLoop(){
-    std::string str = "";
-    for(unsigned i = 0; i < writes.size(); i++){
-        str+= ".>" + writes.at(i) + "\n";
+std::string writeVar(std::string s, enum expr_type t){
+    std::string str = ""; 
+    if(t == expr_type::arr){
+        str += ".[]>" + s;
     }
-    writes.clear();
+    else{
+        str += ".>" + s;
+    }
     return str;
 }
 
-std::string readLoop(){
+std::string readVar(std::string s, enum expr_type t){
     std::string str = "";
-    for(unsigned i = 0; i < reads.size(); i++){
-        str += ".<" + reads.at(i) + "\n";
+    if(t == expr_type::arr){
+        str += ".[]<" + s;
     }
-    reads.clear();
+    else{
+        str += ".<" + s;
+    }
     return str;
 }
 
-
+std::string assignParams(){
+    std::string str = "";
+    if(!parameters.empty()){
+        for(unsigned i = 0; i < parameters.size(); i++){
+            str += "=" + parameters.at(i) + " $" + std::to_string(i) + "\n"; 
+        }
+    }
+    parameters.clear();
+    return str;
+}
 
 std::string declareTemps(){
     std::string str = "";
