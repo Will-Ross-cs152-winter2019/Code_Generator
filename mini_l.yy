@@ -148,6 +148,18 @@ struct identTerm_struct{
 struct elseLoop_struct{
     std::string s = "";
 };
+struct if_struct{
+    std::string s = "";
+    std::string condition;
+};
+struct while_struct{
+    std::string s = "";
+    std::string condition;
+};
+struct doWhile_struct{
+    std::string s = "";
+    std::string condition;
+};
  
     /* end the structures for non-terminal types */
 }
@@ -234,6 +246,9 @@ std::string output = "";
 %type <param_struct> para
 %type <identTerm_struct> ident_term
 %type <elseLoop_struct> else_loop
+%type <if_struct> if_state
+%type <while_struct> while_state
+%type <doWhile_struct> dowhile_state
 /*END TYPES*/
 
 %right  ASSIGN
@@ -290,7 +305,7 @@ statement:      var ASSIGN expression	{
                         $$.s += "=" + $1.s + "," + $3.tmp_num;
                     }
                 }
-                | if_state		{}
+                | if_state		{$$.s = $1.s;}
                 | while_state		{}
                 | dowhile_state		{}
                 | read_state		{$$.s += $1.s;}
@@ -299,7 +314,21 @@ statement:      var ASSIGN expression	{
 		| RETURN expression	{}
 		;
 
-if_state:       IF bool_expr THEN statement_loop else_loop ENDIF		{}
+if_state:       IF bool_expr THEN statement_loop else_loop ENDIF		
+                {
+                    std::string l1 = makeLabel();
+                    std::string l2 = makeLabel();
+                    std::string l3 = makeLabel();
+                    $$.s += $2.s;
+                    $$.s += "?:=" + l1 + "," + $2.tmp_num + "\n"; //If true, goto l1
+                    $$.s += ":=" + l2 + "\n"; //goto label 2
+                    $$.s += ":" + l1 + "\n"; // l1
+                    $$.s += $4.s;
+                    $$.s += ":=" + l3 + "\n"; //goto l3
+                    $$.s += ":" + l2 + "\n"; // l2
+                    $$.s += $5.s;
+                    $$.s += ":" + l3; // l3
+                }
 		; 
 
 while_state:    WHILE bool_expr BEGINLOOP statement_loop ENDLOOP		{}
@@ -323,7 +352,7 @@ varRead_loop:   var 			{reads.push_back($1.s);}
 		;
 
 else_loop:      /* empty */					{$$.s += "";}  
-                | ELSE statement_loop				{}
+                | ELSE statement_loop				{$$.s += $2.s;}
 		;
 
 statement_loop: /*empty */ {$$.s += "";}		 
@@ -339,9 +368,15 @@ relation_and_expr:	relation_expr 		{$$.s += $1.s; $$.tmp_num = $1.tmp_num;}
 			;
 
 relation_expr:  NOT relation_expr		{$$.s += $2.s + "!" + makeTemp() + "," + $2.tmp_num + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
-                | expression comp expression	{$$.s += $1.s + $3.s + readComp($2.t) + makeTemp() + "," + $1.tmp_num + "," + $3.tmp_num + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
-                | TRUE				{$$.s += "=" + makeTemp() + "," + std::to_string(1) + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
-                | FALSE				{$$.s += "=" + makeTemp() + "," + std::to_string(0) + "\n"; $$.tmp_num = temps.at(tempCnt-1);}
+                | expression comp expression	{
+                    $$.s += $1.s + $3.s + readComp($2.t) + makeTemp() + "," + $1.tmp_num + "," + $3.tmp_num + "\n"; 
+                    $$.tmp_num = temps.at(tempCnt-1);}
+                | TRUE				{
+                    $$.s += "==" + makeTemp() + ", " + std::to_string(1) + ", " + std::to_string(1) + "\n";
+                    $$.tmp_num = temps.at(tempCnt-1);}
+                | FALSE				{
+                    $$.s += "==" + makeTemp() + ", " + std::to_string(0) + ", " + std::to_string(1) + "\n";
+                    $$.tmp_num = temps.at(tempCnt-1);}
                 | L_PAREN bool_expr R_PAREN	{$$.s += $2.s; $$.tmp_num = $2.tmp_num;}
 		;
 
@@ -554,6 +589,7 @@ std::string readComp(enum comp_type t){
         default:
             break;
     }
+    return str;
 }
 
 
