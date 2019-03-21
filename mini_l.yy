@@ -18,6 +18,7 @@
 #include <list>
 #include <string>
 #include <vector>
+#include <stack>
 #include <functional>
     /* define the sturctures using as types for non-terminals */
 
@@ -200,6 +201,7 @@ std::vector<std::string> labels;
 
     /* define your symbol table, global variables,
      * list of keywords or any function you may need here */
+std::stack<std::string> conts;
 std::map<std::string, enum token_type> usedVars;
 std::set<std::string> keywordTable; 
 int labelCnt = 0;
@@ -306,11 +308,15 @@ statement:      var ASSIGN expression	{
                     }
                 }
                 | if_state		{$$.s = $1.s;}
-                | while_state		{}
-                | dowhile_state		{}
+                | while_state		{$$.s = $1.s;}
+                | dowhile_state		{$$.s = $1.s;}
                 | read_state		{$$.s += $1.s;}
                 | write_state		{$$.s += $1.s;}
-                | CONTINUE 		{}
+                | CONTINUE 		{
+                    if(!conts.empty()){
+                        $$.s += ":=" + conts.top() + "\n";
+                    }                    
+                }
 		| RETURN expression	{}
 		;
 
@@ -331,10 +337,34 @@ if_state:       IF bool_expr THEN statement_loop else_loop ENDIF
                 }
 		; 
 
-while_state:    WHILE bool_expr BEGINLOOP statement_loop ENDLOOP		{}
+while_state:    WHILE bool_expr BEGINLOOP statement_loop ENDLOOP		
+                {
+                    $$.s += $2.s;
+                    std::string l1 = makeLabel();
+                    std::string l2 = makeLabel();
+                    conts.push(l1);
+                    $$.s += "?:=" + l1 + "," + $2.tmp_num + "\n"; //if true, goto l1
+                    $$.s += ":=" + l2 + "\n"; // goto l
+                    $$.s += ":" + l1 + "\n"; //l1
+                    $$.s += $4.s;
+                    $$.s += $2.s; 
+                    $$.s += "?:=" + l1 + "," + $2.tmp_num + "\n"; //if true, goto l1
+                    $$.s += ":" + l2; // l2
+                    conts.pop();
+                }
 		;
 
-dowhile_state:	DO BEGINLOOP statement_loop ENDLOOP WHILE bool_expr 		{}
+dowhile_state:	DO BEGINLOOP statement_loop ENDLOOP WHILE bool_expr 		
+                   {
+                    std::string l1 = makeLabel();
+                    std::string l2 = makeLabel();
+                    conts.push(l1);
+                    $$.s += ":" + l1 + "\n"; //l1
+                    $$.s += $3.s;
+                    $$.s += $6.s; 
+                    $$.s += "?:=" + l1 + "," + $6.tmp_num; //if true, goto l1
+                    conts.pop();
+                }       
 		;
 
 read_state:     READ varRead_loop		{$$.s += readLoop();}
