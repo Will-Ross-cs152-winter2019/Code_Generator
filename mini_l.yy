@@ -22,7 +22,8 @@
 #include <functional>
     /* define the sturctures using as types for non-terminals */
 
-enum token_type{variable, array, function}; 
+enum err_code{unDec, noMain, reDef, key, noIn, badUse, out, badCont} ;
+enum token_type{var, array, function}; 
 enum expr_type{reg, arr};
 enum comp_type{eq, neq, lte, gte, lt, gt, no}; 
 /* STRUCTS BEGIN HERE!!!!! */
@@ -33,7 +34,11 @@ struct label_struct{
 };
 struct funct_struct{
     std::string s = "";
+    std::vector<std::string> f;
+};
 
+struct function_struct{
+    std::string s = "";
 };
 
 struct prog_struct{
@@ -196,6 +201,7 @@ std::string printExpr(enum expr_type t);
 std::string declareTemps();
 std::string assignParams();
 std::string declareLabels();
+void semanticErr(enum err_code ec);
 int isValid(std::string id);
 std::string makeTemp();
 std::string makeLabel();
@@ -203,6 +209,7 @@ void addToUsed(std::string, enum token_type t);
 std::string readComp(enum comp_type t);
 
 /* VECTORS */
+std::vector<std::string> usedFuncts;
 std::vector<std::string> writes;
 std::vector<std::string> reads;
 std::vector<std::string> temps;
@@ -219,7 +226,15 @@ int tempCnt = 0;
 
 std::string output = "";
 
-
+int searchFuncts(std::string f){
+    int result = 1;
+    for(unsigned i = 0; i < usedFuncts.size(); i++){
+        if(usedFuncts.at(i).compare(f) == 0){
+            result = 0; 
+        }
+    }
+    return result;
+}
     /* end of your code */
 }
 
@@ -283,14 +298,16 @@ std::string output = "";
      * you used Phase 2 and modify their actions to generate codes
      * assume that your grammars start with prog_start
      */
-prog_start:     program     {std::cout << $1.s;}
+prog_start:     program     {std::cout << $1.s;if(!searchFuncts("main")){semanticErr(err_code::noMain);}}
 
 program:        /* empty */  {$$.s += "";}
-                | funct program {$$.s += $1.s + $2.s;}
+                    | funct program {$$.s += $1.s + $2.s; }
                 ;
 
 funct:       	FUNCTION id SEMICOLON BEGIN_PARAMS param_loop END_PARAMS BEGIN_LOCALS dec_loop END_LOCALS BEGIN_BODY statement_loop END_BODY
-		{$$.s += "func" + $2.s + "\n" + declareTemps() + $5.s  + assignParams() + $8.s + $11.s + "endfunc\n";}
+		{
+                usedFuncts.push_back($2.s);
+                $$.s += "func" + $2.s + "\n" + declareTemps() + $5.s  + assignParams() + $8.s + $11.s + "endfunc\n"; /*addToUsed($2.s, token_type::function)*/;}
                 ;
 
 param_loop:     /* empty */ 				{$$.s = "";}
@@ -301,13 +318,13 @@ dec_loop:       /* empty */  	{$$.s = "";}
                 | declaration SEMICOLON dec_loop	{$$.s += $1.s + "\n" + $3.s;}
 		;	
 
-declaration:    ident_loop COLON INTEGER	{$$.s += $1.s;}
+declaration:    ident_loop COLON INTEGER	{$$.s += $1.s; /*addToUsed($1.s, token_type::var);*/}
                 | ident_loop COLON ARRAY L_SQUARE_BRACKET NUMBER R_SQUARE_BRACKET OF INTEGER	
-                    {$$.s += ".[]" + $1.s + ", " + std::to_string($5);}
+                    {$$.s += ".[]" + $1.s + ", " + std::to_string($5); /*addToUsed($1.s, token_type::array);*/}
 		;
 
 ident_loop:     id 				{$$.s += ("." + $1.s);}
-		| id COMMA ident_loop	{$$.s += ("." + $1.s + "\n" + $3.s); }
+		| id COMMA ident_loop	{$$.s += ("." + $1.s + "\n" + $3.s); /*addToUsed($1.s, token_type::var);*/}
 		; 
 
 statement:      var ASSIGN expression	{
@@ -328,6 +345,10 @@ statement:      var ASSIGN expression	{
                 | CONTINUE 		{
                     if(!conts.empty()){
                         $$.s += ":=" + conts.top() + "\n";
+                    }
+                    else{
+                        std::cerr << "error at: " << @$ << " "; 
+                        semanticErr(err_code::badCont);
                     }                    
                 }
 		| RETURN expression	{$$.s += $2.s + "ret" + $2.tmp_num;}
@@ -463,7 +484,12 @@ para:        	expression		        {$$.s += $1.s + "param" + $1.tmp_num + "\n";}
                 | expression COMMA para         {$$.s += $1.s + "param" + $1.tmp_num + "\n" + $3.s; } 
 		;
 		
-ident_term:     id L_PAREN para R_PAREN 	{$$.s += $3.s + "call" + $1.s + "," + makeTemp() + "\n"; $$.tmp_num = temps.at(tempCnt -1);}
+ident_term:     id L_PAREN para R_PAREN 	{$$.s += $3.s + "call" + $1.s + "," + makeTemp() + "\n"; $$.tmp_num = temps.at(tempCnt -1);
+                if(!searchFuncts($1.s)){
+                    //std::cerr << "Error at " << @$ << " ";
+                    //semanticErr(err_code::notDef);
+                }
+                }
 		;
   
 ident_var:      var 	{
@@ -508,7 +534,13 @@ expression:     multi_express 	    {
 
 var:            id 	    							{$$.s += $1.s;}
 		| id L_SQUARE_BRACKET expression R_SQUARE_BRACKET		{$$.s += $3.s; $$.arr.push_back($1.s); $$.arr.push_back($3.tmp_num); 
-                    $$.t = expr_type::arr;}
+                    $$.t = expr_type::arr;
+                    if($3.s.compare("") == 0){
+                        std::cerr << "Error at " << @$ << " ";
+                        semanticErr(err_code::noIn);
+                    }
+                    
+                }
 		;
 
 id:             IDENT 					{$$.s += " " + $1; }
@@ -677,4 +709,38 @@ std::string readComp(enum comp_type t){
     return str;
 }
 
+void semanticErr(enum err_code ec){
+    switch(ec){
+        case err_code::unDec:
+            std::cerr << "Variable not declared!" << std::endl;
+            break;
+        /*case err_code::notDef:
+            std::cerr << "Function not defined!" << std::endl;
+            break;*/
+        case err_code::noMain:
+            std::cerr << "Main function not defined." << std::endl;
+            break;
+        case err_code::reDef:
+            std::cerr << "Variable is multiply defined!" << std::endl;
+            break;
+        case err_code::key:
+            std::cerr << "Trying to declare variable with a reserved keyword." << std::endl;
+            break;
+        case err_code::noIn:
+            std::cerr << "Arrays must be accessed with an index!" << std::endl;
+            break;
+        case err_code::badUse:
+            std::cerr << "Bad use of variable name. Are you using an array using as an integer? (or vice-versa)" << std::endl;
+            break;
+        case err_code::out:
+            std::cerr << "Arrays can not have negative size!" << std::endl;
+            break;
+        case err_code::badCont:
+            std::cerr << "use of keyword \"CONTINUE\" can not be used outside of a loop!" << std::endl;
+            break;
+        default:
+            break;
 
+    }
+
+}
