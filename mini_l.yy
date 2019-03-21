@@ -31,6 +31,15 @@ struct label_struct{
     std::string name;
 
 };
+struct funct_struct{
+    std::string s = "";
+
+};
+
+struct prog_struct{
+    std::string s = "";
+};
+
 struct temp_struct{
     std::string s;
     std::string name;
@@ -216,7 +225,7 @@ std::string output = "";
 
 %token END 0 "end of file";
 
-%start program
+%start prog_start
 
     /* specify tokens, type of non-terminals and terminals here */
 %token	FUNCTION BEGIN_PARAMS END_PARAMS BEGIN_LOCALS END_LOCALS BEGIN_BODY END_BODY
@@ -224,6 +233,8 @@ std::string output = "";
 %token	READ WRITE TRUE FALSE RETURN SEMICOLON COLON COMMA
 
 /*types*/
+%type <funct_struct> funct
+%type <prog_struct> program
 %type <int> NUMBER
 %type <std::string> IDENT
 %type <id_struct> id
@@ -272,13 +283,14 @@ std::string output = "";
      * you used Phase 2 and modify their actions to generate codes
      * assume that your grammars start with prog_start
      */
+prog_start:     program     {std::cout << $1.s;}
 
-program:        /* empty */  {}
-                | funct {}
+program:        /* empty */  {$$.s += "";}
+                | funct program {$$.s += $1.s + $2.s;}
                 ;
 
-funct:       	FUNCTION id SEMICOLON BEGIN_PARAMS param_loop END_PARAMS BEGIN_LOCALS dec_loop END_LOCALS BEGIN_BODY statement_loop END_BODY program
-		{std::cout << "func" << $2.s << "\n" << declareTemps() << $5.s << assignParams() << $8.s << $11.s << "endfunc\n";}
+funct:       	FUNCTION id SEMICOLON BEGIN_PARAMS param_loop END_PARAMS BEGIN_LOCALS dec_loop END_LOCALS BEGIN_BODY statement_loop END_BODY
+		{$$.s += "func" + $2.s + "\n" + declareTemps() + $5.s  + assignParams() + $8.s + $11.s + "endfunc\n";}
                 ;
 
 param_loop:     /* empty */ 				{$$.s = "";}
@@ -290,7 +302,7 @@ dec_loop:       /* empty */  	{$$.s = "";}
 		;	
 
 declaration:    ident_loop COLON INTEGER	{$$.s += $1.s;}
-                | id COLON ARRAY L_SQUARE_BRACKET NUMBER R_SQUARE_BRACKET OF INTEGER	
+                | ident_loop COLON ARRAY L_SQUARE_BRACKET NUMBER R_SQUARE_BRACKET OF INTEGER	
                     {$$.s += ".[]" + $1.s + ", " + std::to_string($5);}
 		;
 
@@ -318,7 +330,7 @@ statement:      var ASSIGN expression	{
                         $$.s += ":=" + conts.top() + "\n";
                     }                    
                 }
-		| RETURN expression	{$$.s += "ret" + $2.tmp_num;}
+		| RETURN expression	{$$.s += $2.s + "ret" + $2.tmp_num;}
 		;
 
 if_state:       IF bool_expr THEN statement_loop else_loop ENDIF		
@@ -329,7 +341,7 @@ if_state:       IF bool_expr THEN statement_loop else_loop ENDIF
                     $$.s += $2.s;
                     $$.s += "?:=" + l1 + "," + $2.tmp_num + "\n"; //If true, goto l1
                     $$.s += ":=" + l2 + "\n"; //goto label 2
-                    $$.s += ":" + l1;// + "\n"; l1
+                    $$.s += ":" + l1 + "\n"; // l1
                     $$.s += $4.s;
                     $$.s += ":=" + l3 + "\n"; //goto l3
                     $$.s += ":" + l2 + "\n"; // l2
@@ -618,7 +630,8 @@ std::string assignParams(){
     std::string str = "";
     if(!parameters.empty()){
         for(unsigned i = 0; i < parameters.size(); i++){
-            str += "=" + parameters.at(i) + " $" + std::to_string(i) + "\n"; 
+            str += "\n=" + parameters.at(i).substr(1, parameters.at(i).size()) + ", $" + std::to_string(i) + "\n";
+            //std::cout << parameters.at(i) << std::endl; 
         }
     }
     parameters.clear();
