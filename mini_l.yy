@@ -328,7 +328,7 @@ if_state:       IF bool_expr THEN statement_loop else_loop ENDIF
                     $$.s += $2.s;
                     $$.s += "?:=" + l1 + "," + $2.tmp_num + "\n"; //If true, goto l1
                     $$.s += ":=" + l2 + "\n"; //goto label 2
-                    $$.s += ":" + l1 + "\n"; // l1
+                    $$.s += ":" + l1;// + "\n"; l1
                     $$.s += $4.s;
                     $$.s += ":=" + l3 + "\n"; //goto l3
                     $$.s += ":" + l2 + "\n"; // l2
@@ -345,7 +345,7 @@ while_state:    WHILE bool_expr BEGINLOOP statement_loop ENDLOOP
                     conts.push(l1);
                     $$.s += "?:=" + l1 + "," + $2.tmp_num + "\n"; //if true, goto l1
                     $$.s += ":=" + l2 + "\n"; // goto l
-                    $$.s += ":" + l1 + "\n"; //l1
+                    $$.s += ":" + l1;// + "\n";l1
                     $$.s += $4.s;
                     $$.s += $2.s; 
                     $$.s += "?:=" + l1 + "," + $2.tmp_num + "\n"; //if true, goto l1
